@@ -3,22 +3,22 @@
 <body>
 <h1 id="title">Welcome to the Matrix Portal upload page!</h1>
 <p>Below will be the current display queue as well as settings to change the queue.</p>
+<p>To upload metadata for an image or animation, such as display settings, upload it AFTER uploading the image file, with the settings file being the exact same filename with .txt instead.</p>
 <form action="/upload" id=fileUpload enctype="multipart/form-data" method="POST">
-	<input type="file" name="filename"><br>
-	<input type="button" value="Upload" onclick="return uploadFile(this.form)">
+	<fieldset>
+		<legend>Upload files to display (txt, msg, bmp, or gif)</legend>
+		<input type="file" accept=".txt,.msg,.bmp,.gif" name="filename"><br>
+		<input type="button" value="Upload" onclick="return uploadFile(this.form)">
+		<progress value="1" max="1" id=uploadProgress></progress><br>
+	</fieldset>
 </form>
-<progress value="1" max="1"></progress><br>
 <form action="/edit" id=queue method="POST">
 	<fieldset>
 		<legend>Items in queue:</legend>
 		<div id="DATA">
 		<!--DATA-->
-<input type="radio" id="file:led_matrices_sine_tube.gif" name="filename" value="led_matrices_sine_tube.gif">
-<label for="file:led_matrices_sine_tube.gif">NEXT: led_matrices_sine_tube.gif</label><br>
-<input type="radio" id="file:led_matrices_hop.gif" name="filename" value="led_matrices_hop.gif">
-<label for="file:led_matrices_hop.gif">1 away: led_matrices_hop.gif</label><br>
-<input type="radio" id="file:testdata.csv" name="filename" value="testdata.csv">
-<label for="file:testdata.csv">2 away: testdata.csv</label><br>
+<input type="radio" id="file:smileys.bmp" name="filename" value="smileys.bmp">
+<label for="file:smileys.bmp">NEXT: smileys.bmp</label><br>
 <!--DATA-->
 		</div>
 	</fieldset>
@@ -35,7 +35,7 @@
 </form>
 <form action="/softwareUpdate" id=softwareUpdate method="POST">
 	<br><br><br><br>
-	<input type="button" id=checkForSoftwareUpdate value="Check" onclick="return checkForSoftwareUpdate()">
+	<input type="button" id=checkForSoftwareUpdate value="Check" onclick="return checkSoftware()">
 	<label for="checkForSoftwareUpdate">Check for software update?</label><br>
 	<div id="SOFTWAREUPDATE">
 	</div>

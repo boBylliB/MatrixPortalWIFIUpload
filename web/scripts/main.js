@@ -38,7 +38,7 @@ function uploadFile(form) {
         // For handling the progress of the upload
         myXhr.upload.addEventListener('progress', function (e) {
           if (e.lengthComputable) {
-            $('progress').attr({
+            $('#uploadProgress').attr({
               value: e.loaded,
               max: e.total,
             });
@@ -67,9 +67,9 @@ function refreshLoop() {
       }
   }, refreshDelay.value * 1000);
 }
-function checkForSoftwareUpdate() {
-  $.get("/softwareUpdate", function(data, status){
+function checkSoftware() {
+  $('#SOFTWAREUPDATE').html("<p>Getting latest release number from GitHub...</p>")
+  $.get("/softwareUpdate", function(data){
     $('#SOFTWAREUPDATE').html(data);
-    console.log(data);
   });
 }
