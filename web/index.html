@@ -6,8 +6,8 @@
 <p>To upload metadata for an image or animation, such as display settings, upload it AFTER uploading the image file, with the settings file being the exact same filename with .txt instead.</p>
 <form action="/upload" id=fileUpload enctype="multipart/form-data" method="POST">
 	<fieldset>
-		<legend>Upload files to display (txt, msg, bmp, or gif)</legend>
-		<input type="file" accept=".txt,.msg,.bmp,.gif" name="filename"><br>
+		<legend>Upload files to display (txt, msg, or bmp)</legend>
+		<input type="file" accept=".txt,.msg,.bmp" name="filename"><br>
 		<input type="button" value="Upload" onclick="return uploadFile(this.form)">
 		<progress value="1" max="1" id=uploadProgress></progress><br>
 	</fieldset>
@@ -17,8 +17,6 @@
 		<legend>Items in queue:</legend>
 		<div id="DATA">
 		<!--DATA-->
-<input type="radio" id="file:smileys.bmp" name="filename" value="smileys.bmp">
-<label for="file:smileys.bmp">NEXT: smileys.bmp</label><br>
 <!--DATA-->
 		</div>
 	</fieldset>

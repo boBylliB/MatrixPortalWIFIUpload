@@ -1,0 +1,27 @@
+Format for .msg files:
+
+height=<number>
+scrolldelay=<number>
+scrollspeed=<number>
+wordwrap=<off/on>
+color=0x<hex color code>
+<message>
+
+Example:
+
+height=30
+scrolldelay=2
+scrollspeed=60
+wordwrap=off
+color=0xFF0000
+suck my big balls
+
+.txt files will work as well, defaulting to this:
+
+height=30
+scrolldelay=0
+scrollspeed=30
+wordwrap=off
+color=0xFFFFFF
+
+Image files need to be a .bmp file (bitmap), indexed colors, 32 high by 64 wide

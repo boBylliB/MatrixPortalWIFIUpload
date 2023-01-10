@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2019 ladyada for Adafruit Industries
 # SPDX-License-Identifier: MIT
 
+import traceback
 import board
 import gc
 import math
@@ -154,7 +155,13 @@ def getFontBitmap(height):
     with open(BITMAP_FONTS + str(height) + ".txt") as settingfile:
         settings = settingfile.readlines()
 
-    width = int(settings[0].split('=')[1])
+    width = -1
+    for setting in settings:
+        name, value = setting.split('=')
+        if name == "width":
+            width = int(value)
+    if width == -1:
+        raise ValueError("Width not found in the font settings!")
 
     filename = BITMAP_FONTS + str(height) + ".bmp"
     bitmap, palette = adafruit_imageload.load(filename, bitmap=displayio.Bitmap, palette=displayio.Palette)
@@ -166,6 +173,7 @@ def displayText(messages, height, scrollDelay, scrollSpeed, wordWrap, color):
     global displayGroup
 
     bitmap, palette, width = getFontBitmap(height)
+    palette[0] = color
     lines = [displayio.Group() for _ in range(len(messages))]
     lineLengths = [0 for _ in range(len(lines))]
     
@@ -305,7 +313,7 @@ def displayTextfile(filename):
     extension = filename.split('.')[1]
     if extension == "msg":
         with open(filename, 'r') as file:
-            height = file.readline().split('=')[1]
+            height = int(file.readline().split('=')[1])
             scrollDelay = int(file.readline().split('=')[1])
             scrollSpeed = int(file.readline().split('=')[1])
             wordWrapChoice = file.readline().split('=')[1]
@@ -319,7 +327,7 @@ def displayTextfile(filename):
     else:
         height = 30
         scrollDelay = 0
-        scrollSpeed = 8
+        scrollSpeed = 30
         wordWrap = False
         color = 0xFFFFFF
 
@@ -357,17 +365,19 @@ def displayImagefile(filename):
             displayAnimation(bitmap, palette, framesPerSecond)
         else:
             try:
-                metafilename = filename.split('.')[0] + '.txt'
+                metafilename = filename.split('.')[0].split('/')[1] + '.txt'
                 with open('metadata/' + metafilename, 'r') as file:
                     settings = file.readlines()
-                    displayTime = int(settings[0].split('=')[1])
-            except OSError as e:
+
+                    displayTime = 5
+                    for setting in settings:
+                        name, value = setting.split('=')
+                        if name == "displaytime":
+                            displayTime = int(value)
+            except (OSError, ValueError) as e:
                 print("Unable to open the metadata file for", filename, "due to", e)
                 displayTime = 5
             displayImage(bitmap, palette, displayTime)
-
-def displayGIF(filename):
-    pass
 
 def displayImage(bitmap, palette, displayTime):
     global currentDisplayItem
@@ -382,10 +392,8 @@ def displayFile(filename):
     extension = filename.split('.')[1]
     if extension == "txt" or extension == "msg":
         displayTextfile(filename)
-    elif extension == "bmp" or extension == "png" or extension == "jpg":
+    elif extension == "bmp":
         displayImagefile(filename)
-    elif extension == "gif":
-        displayGIF(filename)
     else:
         print("File", filename, "has an unrecognized filetype of", extension)
 
@@ -477,6 +485,11 @@ def validIdx(idx, array):
 def removeFilename(targetIdx):
     if validIdx(targetIdx, filenames):
         os.remove("uploads/" + filenames[targetIdx])
+        try:
+            metafilename = filenames[targetIdx].strip('.')[0] + '.txt'
+            os.remove("metadata/" + metafilename)
+        except OSError as e:
+            print("No metadata deleted for", filenames[targetIdx])
         filenames.pop(targetIdx)
 
 def swapFilenames(origin, target):
@@ -573,7 +586,7 @@ def getUpload():
         upload.body.seek(0, 2)
         endPos = upload.body.tell()
         upload.body.seek(currentPos)
-        filesize = endPos - currentPos
+        filesize = endPos - currentPos - boundarySize
         print("Filesize: ", filesize)
 
         isMetadata = False
@@ -601,16 +614,16 @@ def getUpload():
                 print("UnicodeDecodeError: ", e)
                 print("Attempting to write to file in binary...")
                 with open('metadata/' + filename, 'wb') as file:
-                    file.write(bytes(upload.body.read()))
+                    file.write(bytes(upload.body.read(filesize)))
         else:
             try:
                 with open('uploads/' + filename, 'w') as file:
-                    file.write(upload.body.read())
+                    file.write(upload.body.read(filesize))
             except UnicodeDecodeError as e:
                 print("UnicodeDecodeError: ", e)
                 print("Attempting to write to file in binary...")
                 with open('uploads/' + filename, 'wb') as file:
-                    file.write(bytes(upload.body.read()))
+                    file.write(bytes(upload.body.read(filesize)))
             filenames.append(filename)
 
         if hasMetadata:
@@ -745,7 +758,6 @@ def checkForSoftwareUpdate(request):
 def updateQueue(request):
     global queueData
     print("Queue update request received of type: ", request.method)
-    print("Queue update request headers: ", request.headers)
     return ("200 OK", [("Content-Type","text/plain")], queueData)
 
 @web_app.route("/scripts/main.js")
@@ -769,7 +781,7 @@ server.set_interface(esp)
 wsgiServer = server.WSGIServer(80, application=web_app)
 
 ipmessage = ["Website hosted at: " + esp.pretty_ip(esp.ip_address)]
-displayText(ipmessage, 5, 30, 5, True, 0xffffff)
+displayText(ipmessage, 5, 20, 5, True, 0xffffff)
 
 print("Starting Webserver!")
 pinSet = False
@@ -781,7 +793,6 @@ while True:
     # main loop, where the server polls for requests
     try:
         gc.collect()
-        wsgiServer.update_poll()
         updateDisplayItem()
         display.refresh(minimum_frames_per_second=0)
 
@@ -798,6 +809,9 @@ while True:
         elif not dev_pin.value and pinSet:
             print("Dev pin connected!")
             pinSet = False
+        
+        wsgiServer.update_poll()
     except (ValueError, RuntimeError, ConnectionError) as e:
         print("Failed to update server: ", e)
+        traceback.print_exception(e,e,e.__traceback__)
         continue
