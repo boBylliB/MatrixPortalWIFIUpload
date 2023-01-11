@@ -251,6 +251,7 @@ def displayText(messages, height, scrollDelay, scrollSpeed, wordWrap, color):
                 tilegridMatrix.append(tilegridLine)
 
             numSubLines = len(tilegridMatrix)
+
             tilegrid = displayio.TileGrid(bitmap=bitmap, pixel_shader=palette, width=(maxWidth + 1), height=numSubLines, tile_width=width, tile_height=height, default_tile=SPACE_INDEX)
             for yIdx in range(numSubLines):
                 for xIdx in range(maxWidth + 1):
@@ -334,6 +335,10 @@ def displayTextfile(filename):
         with open(filename, 'r') as file:
             messages = file.readlines()
 
+    lastMessage = messages[len(messages) - 1]
+    if len(lastMessage) < 2:
+        messages = messages[:-1]
+
     displayText(messages, height, scrollDelay, scrollSpeed, wordWrap, color)
 
 def displayAnimation(bitmap, palette, framesPerSecond):
@@ -385,6 +390,10 @@ def displayImage(bitmap, palette, displayTime):
     currentDisplayItem['type'] = "image"
     currentDisplayItem['displayTime'] = displayTime
     tilegrid = displayio.TileGrid(bitmap, pixel_shader=palette)
+    if bitmap.width < 64:
+        tilegrid.x = math.floor((64 - bitmap.width) / 2)
+    if bitmap.height < 32:
+        tilegrid.y = math.floor((32 - bitmap.width) / 2)
     displayGroup.append(tilegrid)
     currentDisplayItem['prevTime'] = getTime()
 
@@ -609,7 +618,7 @@ def getUpload():
         if isMetadata:
             try:
                 with open('metadata/' + filename, 'w') as file:
-                    file.write(upload.body.read())
+                    file.write(upload.body.read(filesize))
             except UnicodeDecodeError as e:
                 print("UnicodeDecodeError: ", e)
                 print("Attempting to write to file in binary...")
