@@ -322,7 +322,8 @@ def displayTextfile(filename):
                 wordWrap = True
             else:
                 wordWrap = False
-            color = int(file.readline().split('=')[1])
+            colorChoice = str(file.readline().split('=')[1])
+            color = int('0x' + colorChoice)
 
             messages = file.readlines()
     else:
