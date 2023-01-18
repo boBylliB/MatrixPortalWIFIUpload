@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 boBylliB
+# SPDX-License-Identifier: MIT
+
+# Initial code (for testing and setup, thank you Adafruit) referenced from:
 # SPDX-FileCopyrightText: 2019 ladyada for Adafruit Industries
 # SPDX-License-Identifier: MIT
 
