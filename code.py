@@ -37,6 +37,8 @@ HOST_HTML = "web/index.html"
 HOST_JS = "web/scripts/main.js"
 FILENAMES = "filenames.txt"
 
+MAXSIZE = 4096
+
 BITMAP_FONTS = "bitmapfonts/"
 FIRST_ASCII_VALUE = ord('!')
 SPACE_INDEX = 32 * 3 - 1
@@ -572,6 +574,71 @@ def updateQueueData():
         queueData += name + "</label><br>\n"
         count += 1
 
+def singleDownload(upload.body, filename, filesize, boundary, isMetadata):
+    print('Small file detected, downloading directly')
+    if isMetadata:
+        try:
+            with open('metadata/' + filename, 'w') as file:
+                file.write(upload.body.read(filesize))
+        except UnicodeDecodeError as e:
+            print("UnicodeDecodeError: ", e)
+            print("Attempting to write to file in binary...")
+            with open('metadata/' + filename, 'wb') as file:
+                file.write(bytes(upload.body.read(filesize)))
+    else:
+        try:
+            with open('uploads/' + filename, 'w') as file:
+                file.write(upload.body.read(filesize))
+        except UnicodeDecodeError as e:
+            print("UnicodeDecodeError: ", e)
+            print("Attempting to write to file in binary...")
+            with open('uploads/' + filename, 'wb') as file:
+                file.write(bytes(upload.body.read(filesize)))
+        filenames.append(filename)
+
+    if hasMetadata:
+        try:
+            with open('uploads/' + metafile, 'r') as oldFile:
+                filedata = oldFile.read()
+            with open('metadata/' + metafile, 'w') as newFile:
+                newFile.write(filedata)
+        except UnicodeDecodeError as e:
+            print("UnicodeDecodeError: ", e)
+            print("Attempting to write to file in binary...")
+            with open('uploads/' + metafile, 'rb') as oldFile:
+                filedata = bytes(oldFile.read())
+            with open('metadata/' + metafile, 'wb') as newFile:
+                newFile.write(filedata)
+
+def streamDownload(upload.body, filename, filesize, boundary, isMetadata):
+    print('Large file detected, streaming')
+    bytesRead = 0
+    while bytesRead < filesize:
+        if filesize - bytesRead > MAXSIZE:
+            chunk = upload.body.read(chunk)
+        else:
+            chunk = filesize - bytesRead
+
+        if bytesRead == 0:
+            if isMetadata:
+                with open('metadata/' + filename, 'wb') as file:
+                    file.write(bytes(upload.body.read(chunk)))
+            else:
+                with open('uploads/' + filename, 'wb') as file:
+                    file.write(bytes(upload.body.read(chunk)))
+        else:
+            if isMetadata:
+                with open('metadata/' + filename, 'ab') as file:
+                    file.write(bytes(upload.body.read(chunk)))
+            else:
+                with open('uploads/' + filename, 'ab') as file:
+                    file.write(bytes(upload.body.read(chunk)))
+
+        bytesRead += chunk
+
+    if not isMetadata:
+        filenames.append(filename)
+
 def getUpload():
     global uploadQueueChanged
 
@@ -616,39 +683,13 @@ def getUpload():
                     hasMetadata = True
                     metafile = filenames[jdx]
 
-        if isMetadata:
-            try:
-                with open('metadata/' + filename, 'w') as file:
-                    file.write(upload.body.read(filesize))
-            except UnicodeDecodeError as e:
-                print("UnicodeDecodeError: ", e)
-                print("Attempting to write to file in binary...")
-                with open('metadata/' + filename, 'wb') as file:
-                    file.write(bytes(upload.body.read(filesize)))
+        if filesize < MAXSIZE:
+            singleDownload(upload.body, filename, filesize, boundary, isMetadata, hasMetadata)
         else:
-            try:
-                with open('uploads/' + filename, 'w') as file:
-                    file.write(upload.body.read(filesize))
-            except UnicodeDecodeError as e:
-                print("UnicodeDecodeError: ", e)
-                print("Attempting to write to file in binary...")
-                with open('uploads/' + filename, 'wb') as file:
-                    file.write(bytes(upload.body.read(filesize)))
-            filenames.append(filename)
+            streamDownload(upload.body, filename, filesize, boundary, isMetadata, hasMetadata)
 
         if hasMetadata:
-            try:
-                with open('uploads/' + metafile, 'r') as oldFile:
-                    filedata = oldFile.read()
-                with open('metadata/' + metafile, 'w') as newFile:
-                    newFile.write(filedata)
-            except UnicodeDecodeError as e:
-                print("UnicodeDecodeError: ", e)
-                print("Attempting to write to file in binary...")
-                with open('uploads/' + metafile, 'rb') as oldFile:
-                    filedata = bytes(oldFile.read())
-                with open('metadata/' + metafile, 'wb') as newFile:
-                    newFile.write(filedata)
+            os.rename(('uploads/' + filename), ('metadata/' + filename))
 
         uploadQueue.pop(idx)
 
