@@ -614,10 +614,12 @@ def streamDownload(upload.body, filename, filesize, boundary, isMetadata):
     print('Large file detected, streaming')
     bytesRead = 0
     while bytesRead < filesize:
+        print("Bytes read so far:", bytesRead)
         if filesize - bytesRead > MAXSIZE:
             chunk = upload.body.read(chunk)
         else:
             chunk = filesize - bytesRead
+        print("Chunk size:", chunk)
 
         if bytesRead == 0:
             if isMetadata:
